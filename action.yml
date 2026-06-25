@@ -30,8 +30,8 @@ runs:
                 INPUT_KEY_PUBLIC: ${{ inputs.key_public }}
             run: |
                 mkdir -p ~/.ssh
-                echo "$INPUT_KEY" > ~/.ssh/key
-                echo "$INPUT_KEY_PUBLIC" > ~/.ssh/key.pub
+                echo "${INPUT_KEY}" > ~/.ssh/key
+                echo "${INPUT_KEY_PUBLIC}" > ~/.ssh/key.pub
                 chmod 644 ~/.ssh/*
                 chmod 600 ~/.ssh/key
                 ssh-keyscan -p $INPUT_PORT $INPUT_HOST > ~/.ssh/known_hosts
