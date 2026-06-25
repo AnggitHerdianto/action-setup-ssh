@@ -1,0 +1,43 @@
+name: "Setup SSH"
+description: "Setup SSH key from secrets and configure SSH for remote command execution."
+author: "Anggit Herdianto"
+inputs:
+    host:
+        description: "SSH host address or IP to connect to."
+    port:
+        description: "SSH port number for the connection."
+        default: "22"
+    key:
+        description: "SSH private key content for authentication."
+    key_public:
+        description: "SSH public key content for authentication."
+
+outputs:
+    stdout:
+        description: "Standard output of the executed commands when capture_stdout is enabled."
+        value: ${{ steps.entrypoint.outputs.stdout }}
+
+runs:
+    using: "composite"
+    steps:
+        -
+            name: Setup SSH
+            shell: bash
+            env:
+                INPUT_HOST: ${{ inputs.host }}
+                INPUT_PORT: ${{ inputs.port }}
+                INPUT_KEY: ${{ inputs.key }}
+                INPUT_KEY_PUBLIC: ${{ inputs.key_public }}
+            run: |
+                mkdir -p ~/.ssh
+                echo "$INPUT_KEY" > ~/.ssh/key
+                echo "$INPUT_KEY_PUBLIC" > ~/.ssh/key.pub
+                chmod 644 ~/.ssh/*
+                chmod 600 ~/.ssh/key
+                ssh-keyscan -p $INPUT_PORT $INPUT_HOST > ~/.ssh/known_hosts
+
+                echo Done ...
+
+branding:
+    icon: "terminal"
+    color: "gray-dark"
