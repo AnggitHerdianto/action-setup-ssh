@@ -7,6 +7,9 @@ inputs:
     port:
         description: "SSH port number for the connection."
         default: "22"
+    username:
+        description: "SSH user to connect as."
+        default: "root"
     key:
         description: "SSH private key content for authentication."
     key_public:
@@ -26,17 +29,37 @@ runs:
             env:
                 INPUT_HOST: ${{ inputs.host }}
                 INPUT_PORT: ${{ inputs.port }}
+                INPUT_USERNAME: ${{ inputs.username }}
                 INPUT_KEY: ${{ inputs.key }}
                 INPUT_KEY_PUBLIC: ${{ inputs.key_public }}
             run: |
-                mkdir -p ~/.ssh
-                echo "${INPUT_KEY}" > ~/.ssh/key
-                echo "${INPUT_KEY_PUBLIC}" > ~/.ssh/key.pub
-                chmod 644 ~/.ssh/*
-                chmod 600 ~/.ssh/key
-                ssh-keyscan -p $INPUT_PORT $INPUT_HOST > ~/.ssh/known_hosts
+                set -euo pipefail
 
-                echo Done ...
+                mkdir -p ~/.ssh
+                chmod 700 ~/.ssh
+
+                # Tulis key dengan nama default agar dipakai otomatis oleh ssh
+                printf '%s\n' "${INPUT_KEY}" > ~/.ssh/id_ecdsa
+                printf '%s\n' "${INPUT_KEY_PUBLIC}" > ~/.ssh/id_ecdsa.pub
+                chmod 600 ~/.ssh/id_ecdsa
+                chmod 644 ~/.ssh/id_ecdsa.pub
+
+                # Konfigurasi host -> port -> user -> identity
+                {
+                    echo "Host ${INPUT_HOST}"
+                    echo "    HostName ${INPUT_HOST}"
+                    echo "    Port ${INPUT_PORT}"
+                    echo "    User ${INPUT_USERNAME}"
+                    echo "    IdentityFile ~/.ssh/id_ecdsa"
+                    echo "    IdentitiesOnly yes"
+                } > ~/.ssh/config
+                chmod 600 ~/.ssh/config
+
+                # Tambahkan host key agar tidak diminta konfirmasi
+                ssh-keyscan -p "${INPUT_PORT}" "${INPUT_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
+                chmod 644 ~/.ssh/known_hosts
+
+                echo "Done ..."
 
 branding:
     icon: "terminal"
