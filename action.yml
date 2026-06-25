@@ -7,13 +7,18 @@ inputs:
     port:
         description: "SSH port number for the connection."
         default: "22"
-    username:
-        description: "SSH user to connect as."
-        default: "root"
-    key:
-        description: "SSH private key content for authentication."
-    key_public:
-        description: "SSH public key content for authentication."
+    id_ecdsa:
+        description: "SSH private ECDSA key content for authentication."
+    id_ecdsa_pub:
+        description: "SSH public ECDSA key content for authentication."
+    id_ed25519:
+        description: "SSH private Ed25519 key content for authentication."
+    id_ed25519_pub:
+        description: "SSH public Ed25519 key content for authentication."
+    id_rsa:
+        description: "SSH private RSA key content for authentication."
+    id_rsa_pub:
+        description: "SSH public RSA key content for authentication."
 
 outputs:
     stdout:
@@ -28,38 +33,29 @@ runs:
             shell: bash
             env:
                 INPUT_HOST: ${{ inputs.host }}
-                INPUT_PORT: ${{ inputs.port }}
-                INPUT_USERNAME: ${{ inputs.username }}
-                INPUT_KEY: ${{ inputs.key }}
-                INPUT_KEY_PUBLIC: ${{ inputs.key_public }}
+                INPUT_PORT: ${{ inputs.port || '22' }}
+                INPUT_ID_ECDSA: ${{ inputs.id_ecdsa || '' }}
+                INPUT_ID_ECDSA_PUB: ${{ inputs.id_ecdsa_pub || '' }}
+                INPUT_ID_ED25519: ${{ inputs.id_ed25519 || '' }}
+                INPUT_ID_ED25519_PUB: ${{ inputs.id_ed25519_pub || '' }}
+                INPUT_ID_RSA: ${{ inputs.id_rsa || '' }}
+                INPUT_ID_RSA_PUB: ${{ inputs.id_rsa_pub || '' }}
             run: |
-                set -euo pipefail
-
                 mkdir -p ~/.ssh
-                chmod 700 ~/.ssh
 
-                # Tulis key dengan nama default agar dipakai otomatis oleh ssh
-                printf '%s\n' "${INPUT_KEY}" > ~/.ssh/id_ecdsa
-                printf '%s\n' "${INPUT_KEY_PUBLIC}" > ~/.ssh/id_ecdsa.pub
+                echo "${INPUT_ID_ECDSA}" > ~/.ssh/id_ecdsa
+                echo "${INPUT_ID_ECDSA_PUB}" > ~/.ssh/id_ecdsa.pub
+
+                echo "${INPUT_ID_ED25519}" > ~/.ssh/id_ed25519
+                echo "${INPUT_ID_ED25519_PUB}" > ~/.ssh/id_ed25519.pub
+
+                echo "${INPUT_ID_RSA}" > ~/.ssh/id_rsa
+                echo "${INPUT_ID_RSA_PUB}" > ~/.ssh/id_rsa.pub
+
+                chmod 644 ~/.ssh/*
                 chmod 600 ~/.ssh/id_ecdsa
-                chmod 644 ~/.ssh/id_ecdsa.pub
 
-                # Konfigurasi host -> port -> user -> identity
-                {
-                    echo "Host ${INPUT_HOST}"
-                    echo "    HostName ${INPUT_HOST}"
-                    echo "    Port ${INPUT_PORT}"
-                    echo "    User ${INPUT_USERNAME}"
-                    echo "    IdentityFile ~/.ssh/id_ecdsa"
-                    echo "    IdentitiesOnly yes"
-                } > ~/.ssh/config
-                chmod 600 ~/.ssh/config
-
-                # Tambahkan host key agar tidak diminta konfirmasi
-                ssh-keyscan -p "${INPUT_PORT}" "${INPUT_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
-                chmod 644 ~/.ssh/known_hosts
-
-                echo "Done ..."
+                ssh-keyscan work.awcdigital.com > ~/.ssh/known_hosts
 
 branding:
     icon: "terminal"
