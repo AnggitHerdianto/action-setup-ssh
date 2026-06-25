@@ -52,8 +52,8 @@ runs:
                 echo "${INPUT_ID_RSA}" > ~/.ssh/id_rsa
                 echo "${INPUT_ID_RSA_PUB}" > ~/.ssh/id_rsa.pub
 
-                chmod 644 ~/.ssh/*
-                chmod 600 ~/.ssh/id_ecdsa
+                chmod 644 ~/.ssh
+                chmod 600 ~/.ssh/*
 
                 ssh-keyscan work.awcdigital.com > ~/.ssh/known_hosts
 
