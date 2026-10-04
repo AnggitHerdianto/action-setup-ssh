@@ -19,11 +19,9 @@ inputs:
         description: "SSH private RSA key content for authentication."
     id_rsa_pub:
         description: "SSH public RSA key content for authentication."
-
-outputs:
-    stdout:
-        description: "Standard output of the executed commands when capture_stdout is enabled."
-        value: ${{ steps.entrypoint.outputs.stdout }}
+    passphrase:
+        description: "Passphrase for the private keys, if they are encrypted."
+        required: false
 
 runs:
     using: "composite"
@@ -40,6 +38,7 @@ runs:
                 INPUT_ID_ED25519_PUB: ${{ inputs.id_ed25519_pub || '' }}
                 INPUT_ID_RSA: ${{ inputs.id_rsa || '' }}
                 INPUT_ID_RSA_PUB: ${{ inputs.id_rsa_pub || '' }}
+                INPUT_PASSPHRASE: ${{ inputs.passphrase || '' }}
             run: |
                 mkdir -p ~/.ssh
 
@@ -52,8 +51,19 @@ runs:
                 [ -n "${INPUT_ID_RSA}" ]         && echo "${INPUT_ID_RSA}" > ~/.ssh/id_rsa
                 [ -n "${INPUT_ID_RSA_PUB}" ]     && echo "${INPUT_ID_RSA_PUB}" > ~/.ssh/id_rsa.pub
 
-                chmod 644 ~/.ssh
+                chmod 700 ~/.ssh
                 chmod 600 ~/.ssh/*
+
+                # Lepas passphrase agar ssh/scp/rsync di step berikutnya tidak meminta input interaktif
+                if [ -n "${INPUT_PASSPHRASE}" ]; then
+                    for key in ~/.ssh/id_ecdsa ~/.ssh/id_ed25519 ~/.ssh/id_rsa; do
+                        [ -f "${key}" ] || continue
+                        if ! ssh-keygen -q -p -P "${INPUT_PASSPHRASE}" -N "" -f "${key}" > /dev/null; then
+                            echo "::error::Failed to decrypt ${key}: wrong passphrase or invalid key."
+                            exit 1
+                        fi
+                    done
+                fi
 
                 ssh-keyscan -p "${INPUT_PORT}" "${INPUT_HOST}" > ~/.ssh/known_hosts
 

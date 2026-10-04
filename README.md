@@ -37,15 +37,10 @@ After this step, subsequent steps can connect directly:
 | `id_ed25519_pub` | no       | —       | Public Ed25519 key content           |
 | `id_rsa`         | no\*     | —       | Private RSA key content              |
 | `id_rsa_pub`     | no       | —       | Public RSA key content               |
+| `passphrase`     | no       | —       | Passphrase for encrypted private key |
 
 \* At least one private key must be provided. Each key is only written when its
 value is not empty, so you can supply just the key type you use.
-
-## Outputs
-
-| Name     | Description                            |
-| -------- | -------------------------------------- |
-| `stdout` | Standard output of executed commands. |
 
 ## Important notes
 
@@ -68,6 +63,21 @@ value is not empty, so you can supply just the key type you use.
 
 - **Provide only the key type you use.** Empty inputs are skipped, so passing
   just `id_ecdsa` (without `id_rsa` / `id_ed25519`) works fine.
+
+- **Passphrase-protected keys:** set `passphrase` and the action removes it
+  from every provided private key on the runner, so later steps can connect
+  without a prompt. The same passphrase is applied to all private keys, and the
+  step fails if it is wrong. Leave it empty for unencrypted keys.
+
+  ```yaml
+  with:
+      host: example.com
+      id_ed25519: ${{ secrets.ID_ED25519 }}
+      passphrase: ${{ secrets.SSH_PASSPHRASE }}
+  ```
+
+  Note: the decrypted key stays in `~/.ssh` on the runner for the rest of the
+  job.
 
 - **Non-default SSH port:** set `port` so the host key scan and connections use
   the right port:
