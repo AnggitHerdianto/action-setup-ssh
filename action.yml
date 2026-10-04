@@ -1,4 +1,4 @@
-name: "Setup SSH"
+name: "SSH Key Setup for Deploy"
 description: "Setup SSH key from secrets and configure SSH for remote command execution."
 author: "Anggit Herdianto"
 inputs:
