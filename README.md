@@ -37,7 +37,6 @@ After this step, subsequent steps can connect directly:
 | `id_ed25519_pub` | no       | —       | Public Ed25519 key content           |
 | `id_rsa`         | no\*     | —       | Private RSA key content              |
 | `id_rsa_pub`     | no       | —       | Public RSA key content               |
-| `ssh_key`        | no\*     | —       | Private key content of any type      |
 | `passphrase`     | no       | —       | Passphrase for encrypted private key |
 
 \* At least one private key must be provided. Each key is only written when its
@@ -64,18 +63,6 @@ value is not empty, so you can supply just the key type you use.
 
 - **Provide only the key type you use.** Empty inputs are skipped, so passing
   just `id_ecdsa` (without `id_rsa` / `id_ed25519`) works fine.
-
-- **Generic private key:** `ssh_key` accepts a private key of any type
-  (RSA, ECDSA, Ed25519). It is written to `~/.ssh/ssh_key` and registered
-  in `~/.ssh/config` together with the default key files, so `ssh`/`scp`/`rsync`
-  pick it up without `-i`. If `~/.ssh/config` already exists, the entry is
-  appended to it.
-
-  ```yaml
-  with:
-      host: example.com
-      ssh_key: ${{ secrets.SSH_KEY }}
-  ```
 
 - **Passphrase-protected keys:** set `passphrase` and the action removes it
   from every provided private key on the runner, so later steps can connect

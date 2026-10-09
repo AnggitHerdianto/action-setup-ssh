@@ -4,25 +4,29 @@ author: "Anggit Herdianto"
 inputs:
     host:
         description: "SSH host address or IP to connect to."
+        required: false
     port:
         description: "SSH port number for the connection."
         default: "22"
-    # old style
+        required: false
     id_ecdsa:
         description: "SSH private ECDSA key content for authentication."
+        required: false
     id_ecdsa_pub:
         description: "SSH public ECDSA key content for authentication."
+        required: false
     id_ed25519:
         description: "SSH private Ed25519 key content for authentication."
+        required: false
     id_ed25519_pub:
         description: "SSH public Ed25519 key content for authentication."
+        required: false
     id_rsa:
         description: "SSH private RSA key content for authentication."
+        required: false
     id_rsa_pub:
         description: "SSH public RSA key content for authentication."
-    # new style
-    ssh_key:
-        description: "SSH private key content of any type, written as ~/.ssh/ssh_key."
+        required: false
     passphrase:
         description: "Passphrase for the private keys, if they are encrypted."
         required: false
@@ -36,15 +40,12 @@ runs:
             env:
                 INPUT_HOST: ${{ inputs.host }}
                 INPUT_PORT: ${{ inputs.port || '22' }}
-                # old style
                 INPUT_ID_ECDSA: ${{ inputs.id_ecdsa || '' }}
                 INPUT_ID_ECDSA_PUB: ${{ inputs.id_ecdsa_pub || '' }}
                 INPUT_ID_ED25519: ${{ inputs.id_ed25519 || '' }}
                 INPUT_ID_ED25519_PUB: ${{ inputs.id_ed25519_pub || '' }}
                 INPUT_ID_RSA: ${{ inputs.id_rsa || '' }}
                 INPUT_ID_RSA_PUB: ${{ inputs.id_rsa_pub || '' }}
-                # new style
-                INPUT_SSH_KEY: ${{ inputs.ssh_key || '' }}
                 INPUT_PASSPHRASE: ${{ inputs.passphrase || '' }}
             run: |
                 mkdir -p ~/.ssh
@@ -58,25 +59,12 @@ runs:
                 [ -n "${INPUT_ID_RSA}" ]         && echo "${INPUT_ID_RSA}" > ~/.ssh/id_rsa
                 [ -n "${INPUT_ID_RSA_PUB}" ]     && echo "${INPUT_ID_RSA_PUB}" > ~/.ssh/id_rsa.pub
 
-                # Nama file non-default tidak dibaca ssh otomatis, jadi didaftarkan lewat config.
-                # Key default ikut dicantumkan karena IdentityFile di config menonaktifkan daftar default.
-                if [ -n "${INPUT_SSH_KEY}" ]; then
-                    echo "${INPUT_SSH_KEY}" > ~/.ssh/ssh_key
-                    {
-                        echo "Host *"
-                        echo "    IdentityFile ~/.ssh/ssh_key"
-                        echo "    IdentityFile ~/.ssh/id_ecdsa"
-                        echo "    IdentityFile ~/.ssh/id_ed25519"
-                        echo "    IdentityFile ~/.ssh/id_rsa"
-                    } >> ~/.ssh/config
-                fi
-
                 chmod 700 ~/.ssh
                 chmod 600 ~/.ssh/*
 
-                # Lepas passphrase agar ssh/scp/rsync di step berikutnya tidak meminta input interaktif
+                # Strip the passphrase so ssh/scp/rsync in later steps do not prompt for input
                 if [ -n "${INPUT_PASSPHRASE}" ]; then
-                    for key in ~/.ssh/id_ecdsa ~/.ssh/id_ed25519 ~/.ssh/id_rsa ~/.ssh/ssh_key; do
+                    for key in ~/.ssh/id_ecdsa ~/.ssh/id_ed25519 ~/.ssh/id_rsa; do
                         [ -f "${key}" ] || continue
                         if ! ssh-keygen -q -p -P "${INPUT_PASSPHRASE}" -N "" -f "${key}" > /dev/null; then
                             echo "::error::Failed to decrypt ${key}: wrong passphrase or invalid key."
