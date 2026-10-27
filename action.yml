@@ -44,7 +44,7 @@ runs:
             env:
                 INPUT_HOST: ${{ inputs.host }}
                 INPUT_PORT: ${{ inputs.port || '22' }}
-                INPUT_TIMEOUT: ${{ inputs.timeout || '15' }}
+                INPUT_TIMEOUT: ${{ inputs.timeout || '30' }}
                 INPUT_ID_ECDSA: ${{ inputs.id_ecdsa || '' }}
                 INPUT_ID_ECDSA_PUB: ${{ inputs.id_ecdsa_pub || '' }}
                 INPUT_ID_ED25519: ${{ inputs.id_ed25519 || '' }}
