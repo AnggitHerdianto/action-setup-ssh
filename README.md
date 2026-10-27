@@ -31,6 +31,7 @@ After this step, subsequent steps can connect directly:
 | ---------------- | -------- | ------- | ------------------------------------ |
 | `host`           | yes      | —       | SSH host address or IP to connect to |
 | `port`           | no       | `22`    | SSH port number                      |
+| `timeout`        | no       | `15`    | Host key scan timeout in seconds     |
 | `id_ecdsa`       | no\*     | —       | Private ECDSA key content            |
 | `id_ecdsa_pub`   | no       | —       | Public ECDSA key content             |
 | `id_ed25519`     | no\*     | —       | Private Ed25519 key content          |
@@ -86,6 +87,18 @@ value is not empty, so you can supply just the key type you use.
   with:
       host: example.com
       port: 2222
+      id_ecdsa: ${{ secrets.ID_ECDSA }}
+  ```
+
+- **Slow host key scan:** `ssh-keyscan` gives up silently (no output, exit
+  code 1) when the server banner does not arrive within `timeout` seconds. The
+  default of 15 covers TCP proxies that hold the banner until the client sends
+  data. Raise it if the scan still fails:
+
+  ```yaml
+  with:
+      host: example.com
+      timeout: 30
       id_ecdsa: ${{ secrets.ID_ECDSA }}
   ```
 

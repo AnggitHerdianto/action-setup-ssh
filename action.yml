@@ -9,6 +9,10 @@ inputs:
         description: "SSH port number for the connection."
         default: "22"
         required: false
+    timeout:
+        description: "Seconds to wait for the host key during the scan."
+        default: "15"
+        required: false
     id_ecdsa:
         description: "SSH private ECDSA key content for authentication."
         required: false
@@ -40,6 +44,7 @@ runs:
             env:
                 INPUT_HOST: ${{ inputs.host }}
                 INPUT_PORT: ${{ inputs.port || '22' }}
+                INPUT_TIMEOUT: ${{ inputs.timeout || '15' }}
                 INPUT_ID_ECDSA: ${{ inputs.id_ecdsa || '' }}
                 INPUT_ID_ECDSA_PUB: ${{ inputs.id_ecdsa_pub || '' }}
                 INPUT_ID_ED25519: ${{ inputs.id_ed25519 || '' }}
@@ -73,7 +78,9 @@ runs:
                     done
                 fi
 
-                ssh-keyscan -p "${INPUT_PORT}" "${INPUT_HOST}" > ~/.ssh/known_hosts
+                # ssh-keyscan defaults to a 5s timeout and fails silently when the banner is late,
+                # e.g. behind a TCP proxy that waits for the client to speak first
+                ssh-keyscan -T "${INPUT_TIMEOUT}" -p "${INPUT_PORT}" "${INPUT_HOST}" > ~/.ssh/known_hosts
 
 branding:
     icon: "terminal"
