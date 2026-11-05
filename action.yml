@@ -11,7 +11,10 @@ inputs:
         required: false
     timeout:
         description: "Seconds to wait for the host key during the scan."
-        default: "15"
+        default: "60"
+        required: false
+    known_hosts:
+        description: "Pinned known_hosts lines for the host; when set, the host key scan is skipped."
         required: false
     id_ecdsa:
         description: "SSH private ECDSA key content for authentication."
@@ -45,6 +48,7 @@ runs:
                 INPUT_HOST: ${{ inputs.host }}
                 INPUT_PORT: ${{ inputs.port || '22' }}
                 INPUT_TIMEOUT: ${{ inputs.timeout || '60' }}
+                INPUT_KNOWN_HOSTS: ${{ inputs.known_hosts || '' }}
                 INPUT_ID_ECDSA: ${{ inputs.id_ecdsa || '' }}
                 INPUT_ID_ECDSA_PUB: ${{ inputs.id_ecdsa_pub || '' }}
                 INPUT_ID_ED25519: ${{ inputs.id_ed25519 || '' }}
@@ -78,9 +82,17 @@ runs:
                     done
                 fi
 
-                # ssh-keyscan defaults to a 5s timeout and fails silently when the banner is late,
+                # A pinned host key skips the scan: no dependency on the server banner and
+                # no trust-on-first-use of whatever key answers.
+                # Otherwise ssh-keyscan is used; it fails silently when the banner is late,
                 # e.g. behind a TCP proxy that waits for the client to speak first
-                ssh-keyscan -T "${INPUT_TIMEOUT}" -p "${INPUT_PORT}" "${INPUT_HOST}" > ~/.ssh/known_hosts
+                if [ -n "${INPUT_KNOWN_HOSTS}" ]; then
+                    echo "${INPUT_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+                elif ! ssh-keyscan -T "${INPUT_TIMEOUT}" -p "${INPUT_PORT}" "${INPUT_HOST}" > ~/.ssh/known_hosts; then
+                    echo "::error::ssh-keyscan got no host key from ${INPUT_HOST}:${INPUT_PORT} within ${INPUT_TIMEOUT}s. Pin the host key with the known_hosts input instead."
+                    exit 1
+                fi
+                chmod 600 ~/.ssh/known_hosts
 
 branding:
     icon: "terminal"

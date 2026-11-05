@@ -31,7 +31,7 @@ After this step, subsequent steps can connect directly:
 | ---------------- | -------- | ------- | ------------------------------------ |
 | `host`           | yes      | —       | SSH host address or IP to connect to |
 | `port`           | no       | `22`    | SSH port number                      |
-| `timeout`        | no       | `15`    | Host key scan timeout in seconds     |
+| `timeout`        | no       | `60`    | Host key scan timeout in seconds     |
 | `id_ecdsa`       | no\*     | —       | Private ECDSA key content            |
 | `id_ecdsa_pub`   | no       | —       | Public ECDSA key content             |
 | `id_ed25519`     | no\*     | —       | Private Ed25519 key content          |
@@ -39,6 +39,7 @@ After this step, subsequent steps can connect directly:
 | `id_rsa`         | no\*     | —       | Private RSA key content              |
 | `id_rsa_pub`     | no       | —       | Public RSA key content               |
 | `passphrase`     | no       | —       | Passphrase for encrypted private key |
+| `known_hosts`    | no       | —       | Pinned host key lines; skips the scan |
 
 \* At least one private key must be provided. Each key is only written when its
 value is not empty, so you can supply just the key type you use.
@@ -92,15 +93,34 @@ value is not empty, so you can supply just the key type you use.
 
 - **Slow host key scan:** `ssh-keyscan` gives up silently (no output, exit
   code 1) when the server banner does not arrive within `timeout` seconds. The
-  default of 15 covers TCP proxies that hold the banner until the client sends
+  default of 60 covers TCP proxies that hold the banner until the client sends
   data. Raise it if the scan still fails:
 
   ```yaml
   with:
       host: example.com
-      timeout: 30
+      timeout: 90
       id_ecdsa: ${{ secrets.ID_ECDSA }}
   ```
+
+- **Pinned host key (recommended):** set `known_hosts` and the scan is skipped
+  entirely. Later steps only trust that key, and the step no longer depends on
+  how fast the server sends its banner. Use the `[host]:port` form for a
+  non-default port, and add one line per host name/IP you connect to:
+
+  ```yaml
+  with:
+      host: example.com
+      port: 2222
+      known_hosts: ${{ vars.SSH_KNOWN_HOSTS }}
+      id_ecdsa: ${{ secrets.ID_ECDSA }}
+  ```
+
+  Get the lines from a trusted machine with
+  `ssh-keyscan -t ed25519 -p 2222 example.com` and verify the fingerprint
+  (`ssh-keygen -lf`) against the server before storing them. Host keys are
+  public, so a variable is enough; when the server key changes, update it or
+  the connection fails with `Host key verification failed`.
 
 ## License
 
